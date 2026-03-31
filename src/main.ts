@@ -72,11 +72,12 @@ export default class GitObsidianPlugin extends Plugin {
     }
 
     this.scheduler = new SyncScheduler({
-      getIntervalMs: () => this.settings.syncIntervalMinutes * 60_000,
+      getDelayMs: () => this.settings.syncIntervalMinutes * 60_000,
       runSync: async (source) => this.runSync(source),
     });
     if (this.syncService) {
       this.scheduler.start();
+      this.registerVaultActivityEvents();
     }
 
     this.addCommand({
@@ -367,6 +368,33 @@ export default class GitObsidianPlugin extends Plugin {
       if (leaf.view instanceof GitHistoryView) {
         await leaf.view.reloadHistory(false);
       }
+    }));
+  }
+
+  private registerVaultActivityEvents(): void {
+    const queueAutoSync = (): void => {
+      if (this.scheduler.isPaused()) {
+        return;
+      }
+
+      this.scheduler.noteActivity();
+      this.setStatus(
+        "idle",
+        `Automatic sync scheduled ${this.settings.syncIntervalMinutes} minute${this.settings.syncIntervalMinutes === 1 ? "" : "s"} after the last saved edit.`,
+      );
+    };
+
+    this.registerEvent(this.app.vault.on("modify", () => {
+      queueAutoSync();
+    }));
+    this.registerEvent(this.app.vault.on("create", () => {
+      queueAutoSync();
+    }));
+    this.registerEvent(this.app.vault.on("delete", () => {
+      queueAutoSync();
+    }));
+    this.registerEvent(this.app.vault.on("rename", () => {
+      queueAutoSync();
     }));
   }
 }

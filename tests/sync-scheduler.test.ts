@@ -13,10 +13,10 @@ describe("sync scheduler", () => {
     vi.unstubAllGlobals();
   });
 
-  it("runs on the configured interval", async () => {
+  it("runs once after the configured inactivity delay", async () => {
     const calls: string[] = [];
     const scheduler = new SyncScheduler({
-      getIntervalMs: () => 1_000,
+      getDelayMs: () => 1_000,
       runSync: (source) => {
         calls.push(source);
         return Promise.resolve();
@@ -24,16 +24,20 @@ describe("sync scheduler", () => {
     });
 
     scheduler.start();
-    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.advanceTimersByTimeAsync(500);
+    scheduler.noteActivity();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(calls).toEqual([]);
+
     await vi.advanceTimersByTimeAsync(1_000);
 
-    expect(calls).toEqual(["automatic", "automatic"]);
+    expect(calls).toEqual(["automatic"]);
   });
 
   it("prevents duplicate runs", async () => {
     let resolveRun: () => void = () => undefined;
     const scheduler = new SyncScheduler({
-      getIntervalMs: () => 1_000,
+      getDelayMs: () => 1_000,
       runSync: () => new Promise<void>((resolve) => {
         resolveRun = resolve;
       }),
@@ -47,10 +51,10 @@ describe("sync scheduler", () => {
     expect(await firstRun).toBe(true);
   });
 
-  it("pauses and resumes the interval", async () => {
+  it("pauses and resumes the inactivity timer", async () => {
     const calls: string[] = [];
     const scheduler = new SyncScheduler({
-      getIntervalMs: () => 1_000,
+      getDelayMs: () => 1_000,
       runSync: (source) => {
         calls.push(source);
         return Promise.resolve();
@@ -65,5 +69,32 @@ describe("sync scheduler", () => {
     scheduler.resume();
     await vi.advanceTimersByTimeAsync(1_000);
     expect(calls).toEqual(["automatic"]);
+  });
+
+  it("queues another automatic run when changes arrive during a sync", async () => {
+    let resolveRun: () => void = () => undefined;
+    const calls: string[] = [];
+    const scheduler = new SyncScheduler({
+      getDelayMs: () => 1_000,
+      runSync: (source) => {
+        calls.push(source);
+        return new Promise<void>((resolve) => {
+          resolveRun = resolve;
+        });
+      },
+    });
+
+    scheduler.start();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(calls).toEqual(["automatic"]);
+
+    scheduler.noteActivity();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(calls).toEqual(["automatic"]);
+
+    resolveRun();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(calls).toEqual(["automatic", "automatic"]);
   });
 });

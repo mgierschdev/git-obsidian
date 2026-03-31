@@ -10,7 +10,7 @@ import type {
   GitRunOptions,
   RepositoryInspection,
 } from "./types";
-import { buildGitHistoryArgs, parseCommitFileChanges, parseGitHistory } from "./git-history";
+import { buildGitHistoryArgsWithOffset, parseCommitFileChanges, parseGitHistory } from "./git-history";
 
 const execFileAsync = promisify(execFile);
 
@@ -115,8 +115,8 @@ export class GitCommandRunner {
     }
   }
 
-  async readHistory(limit = 30): Promise<GitHistoryEntry[]> {
-    const output = await this.run(buildGitHistoryArgs(limit));
+  async readHistory(limit = 30, offset = 0): Promise<GitHistoryEntry[]> {
+    const output = await this.run(buildGitHistoryArgsWithOffset(limit, offset));
     return parseGitHistory(output.stdout);
   }
 

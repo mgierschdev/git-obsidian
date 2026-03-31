@@ -4,12 +4,25 @@ const FIELD_SEPARATOR = "\u001f";
 const RECORD_SEPARATOR = "\u001e";
 
 export function buildGitHistoryArgs(limit = 30): string[] {
-  return [
+  return buildGitHistoryArgsWithOffset(limit, 0);
+}
+
+export function buildGitHistoryArgsWithOffset(limit = 30, offset = 0): string[] {
+  const args = [
     "log",
     `--max-count=${limit}`,
+  ];
+
+  if (offset > 0) {
+    args.push(`--skip=${offset}`);
+  }
+
+  args.push(
     "--date=iso-strict",
     `--pretty=format:%H${FIELD_SEPARATOR}%h${FIELD_SEPARATOR}%an${FIELD_SEPARATOR}%ae${FIELD_SEPARATOR}%aI${FIELD_SEPARATOR}%s${FIELD_SEPARATOR}%b${RECORD_SEPARATOR}`,
-  ];
+  );
+
+  return args;
 }
 
 export function parseGitHistory(raw: string): GitHistoryEntry[] {
