@@ -12,23 +12,6 @@ export class GitObsidianSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName("Repository sync").setHeading();
-    containerEl.createEl("p", {
-      text: this.plugin.getRepositorySummary(),
-    });
-
-    new Setting(containerEl)
-      .setName("Detect repository settings")
-      .setDesc("Prefill the branch and GitHub HTTPS remote from the vault repository if available.")
-      .addButton((button) =>
-        button
-          .setButtonText("Detect")
-          .onClick(() => {
-            void this.plugin.detectRepositoryDefaults(true)
-              .then(() => this.display())
-              .catch((error: unknown) => this.plugin.handleUserFacingError(error, true));
-          }));
-
     this.addIntervalSetting(containerEl);
     this.addToggleSetting(containerEl, "Auto-commit", "Create a commit automatically whenever local changes are detected before sync.", "autoCommit");
     this.addToggleSetting(containerEl, "Auto-merge", "Merge remote changes automatically. When a note conflict remains, preserve both versions inside the note.", "autoMerge");

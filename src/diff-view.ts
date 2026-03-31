@@ -53,9 +53,45 @@ export class GitDiffView extends ItemView {
       cls: "git-obsidian-history-summary",
     });
 
-    contentEl.createEl("pre", {
-      text: this.diff.text || "No patch output for this file.",
-      cls: "git-obsidian-commit-detail-body",
-    });
+    if (!this.diff.text) {
+      contentEl.createEl("div", {
+        text: "No patch output for this file.",
+        cls: "git-obsidian-commit-detail-body",
+      });
+      return;
+    }
+
+    const diffBody = contentEl.createDiv({ cls: "git-obsidian-diff-body" });
+    for (const line of this.diff.text.split("\n")) {
+      const lineEl = diffBody.createDiv({
+        cls: `git-obsidian-diff-line ${classifyDiffLine(line)}`,
+      });
+      lineEl.textContent = line.length > 0 ? line : " ";
+    }
   }
+}
+
+function classifyDiffLine(line: string): string {
+  if (line.startsWith("@@")) {
+    return "git-obsidian-diff-line-hunk";
+  }
+
+  if (
+    line.startsWith("diff --git") ||
+    line.startsWith("index ") ||
+    line.startsWith("--- ") ||
+    line.startsWith("+++ ")
+  ) {
+    return "git-obsidian-diff-line-file";
+  }
+
+  if (line.startsWith("+")) {
+    return "git-obsidian-diff-line-added";
+  }
+
+  if (line.startsWith("-")) {
+    return "git-obsidian-diff-line-removed";
+  }
+
+  return "git-obsidian-diff-line-context";
 }

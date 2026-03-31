@@ -120,3 +120,47 @@
   border-radius: 10px;
   font-size: 0.82rem;
 }
+
+.git-obsidian-diff-body {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-family: var(--font-monospace);
+}
+
+.git-obsidian-diff-line {
+  white-space: pre;
+  padding: 0.08rem 0.4rem;
+  border-radius: 6px;
+}
+
+.git-obsidian-diff-line + .git-obsidian-diff-line {
+  margin-top: 0.08rem;
+}
+
+.git-obsidian-diff-line-file {
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.git-obsidian-diff-line-hunk {
+  color: var(--interactive-accent);
+}
+
+.git-obsidian-diff-line-added {
+  color: var(--text-success);
+  background: color-mix(in srgb, var(--text-success) 12%, transparent);
+}
+
+.git-obsidian-diff-line-removed {
+  color: var(--text-error);
+  background: color-mix(in srgb, var(--text-error) 12%, transparent);
+}
+
+.git-obsidian-diff-line-context {
+  color: var(--text-normal);
+}
