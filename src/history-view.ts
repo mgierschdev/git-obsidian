@@ -4,10 +4,14 @@ import type GitObsidianPlugin from "./main";
 import type { GitCommitDetail, GitHistoryEntry } from "./types";
 
 export const GIT_HISTORY_VIEW_TYPE = "git-obsidian-history";
+const HISTORY_BATCH_SIZE = 30;
+const LOAD_MORE_THRESHOLD_PX = 160;
 
 export class GitHistoryView extends ItemView {
   private history: GitHistoryEntry[] = [];
   private selectedCommit: GitCommitDetail | null = null;
+  private hasMoreHistory = false;
+  private loadingMoreHistory = false;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: GitObsidianPlugin) {
     super(leaf);
@@ -27,6 +31,9 @@ export class GitHistoryView extends ItemView {
 
   async onOpen(): Promise<void> {
     this.contentEl.addClass("git-obsidian-history-view");
+    this.registerDomEvent(this.contentEl, "scroll", () => {
+      void this.maybeLoadMoreHistory();
+    });
     this.addAction("refresh-cw", "Refresh history", () => {
       void this.reloadHistory(true);
     });
@@ -41,7 +48,9 @@ export class GitHistoryView extends ItemView {
     });
 
     try {
-      this.history = await this.plugin.getGitHistory();
+      this.loadingMoreHistory = false;
+      this.history = await this.plugin.getGitHistory(HISTORY_BATCH_SIZE, 0);
+      this.hasMoreHistory = this.history.length === HISTORY_BATCH_SIZE;
       this.render();
 
       if (showNotice) {
@@ -61,7 +70,7 @@ export class GitHistoryView extends ItemView {
     const header = contentEl.createDiv({ cls: "git-obsidian-history-header" });
     header.createEl("h3", { text: "Git history" });
     header.createEl("p", {
-      text: `${this.history.length} recent commit${this.history.length === 1 ? "" : "s"}`,
+      text: `${this.history.length} commit${this.history.length === 1 ? "" : "s"} loaded`,
       cls: "git-obsidian-history-summary",
     });
 
@@ -102,6 +111,13 @@ export class GitHistoryView extends ItemView {
         cls: "git-obsidian-history-author",
       });
 
+    }
+
+    if (this.loadingMoreHistory || this.hasMoreHistory) {
+      contentEl.createEl("p", {
+        cls: "git-obsidian-history-summary git-obsidian-history-load-more",
+        text: this.loadingMoreHistory ? "Loading more commits..." : "Scroll down to load 30 more commits.",
+      });
     }
   }
 
@@ -175,6 +191,36 @@ export class GitHistoryView extends ItemView {
       this.plugin.handleUserFacingError(error, true);
       this.renderError(message);
     }
+  }
+
+  private async maybeLoadMoreHistory(): Promise<void> {
+    if (this.selectedCommit || this.loadingMoreHistory || !this.hasMoreHistory) {
+      return;
+    }
+
+    const remainingScroll = this.contentEl.scrollHeight - this.contentEl.scrollTop - this.contentEl.clientHeight;
+    if (remainingScroll > LOAD_MORE_THRESHOLD_PX) {
+      return;
+    }
+
+    const previousScrollTop = this.contentEl.scrollTop;
+    this.loadingMoreHistory = true;
+    this.render();
+
+    try {
+      const nextBatch = await this.plugin.getGitHistory(HISTORY_BATCH_SIZE, this.history.length);
+      this.history = [...this.history, ...nextBatch];
+      this.hasMoreHistory = nextBatch.length === HISTORY_BATCH_SIZE;
+    } catch (error) {
+      this.loadingMoreHistory = false;
+      this.plugin.handleUserFacingError(error, true);
+      this.render();
+      return;
+    }
+
+    this.loadingMoreHistory = false;
+    this.render();
+    this.contentEl.scrollTop = previousScrollTop;
   }
 }
 

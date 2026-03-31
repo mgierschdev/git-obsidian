@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { buildGitHistoryArgs, parseGitHistory } from "../src/git-history";
+import { buildGitHistoryArgs, buildGitHistoryArgsWithOffset, parseGitHistory } from "../src/git-history";
 
 describe("git history helpers", () => {
   it("builds a git log command with the configured limit", () => {
     expect(buildGitHistoryArgs(15)).toEqual([
       "log",
       "--max-count=15",
+      "--date=iso-strict",
+      "--pretty=format:%H\u001f%h\u001f%an\u001f%ae\u001f%aI\u001f%s\u001f%b\u001e",
+    ]);
+  });
+
+  it("builds a paged git log command with an offset", () => {
+    expect(buildGitHistoryArgsWithOffset(30, 60)).toEqual([
+      "log",
+      "--max-count=30",
+      "--skip=60",
       "--date=iso-strict",
       "--pretty=format:%H\u001f%h\u001f%an\u001f%ae\u001f%aI\u001f%s\u001f%b\u001e",
     ]);

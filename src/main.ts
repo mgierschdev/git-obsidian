@@ -145,13 +145,13 @@ export default class GitObsidianPlugin extends Plugin {
     return this.repositorySummary;
   }
 
-  async getGitHistory(limit = 30): Promise<GitHistoryEntry[]> {
+  async getGitHistory(limit = 30, offset = 0): Promise<GitHistoryEntry[]> {
     if (!this.gitRunner) {
       throw new Error("Git history is unavailable because the vault path could not be resolved.");
     }
 
     await this.gitRunner.inspectRepository();
-    return this.gitRunner.readHistory(limit);
+    return this.gitRunner.readHistory(limit, offset);
   }
 
   async getCommitDetail(hash: string): Promise<GitCommitDetail> {
