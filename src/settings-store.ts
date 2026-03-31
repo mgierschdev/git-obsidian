@@ -73,6 +73,22 @@ export function validateSettingsForPersistence(
     errors.push("Auto-merge must be a boolean value.");
   }
 
+  if (typeof settings.notifyOnError !== "boolean") {
+    errors.push("Error notifications must be a boolean value.");
+  }
+
+  if (typeof settings.notifyOnCommit !== "boolean") {
+    errors.push("Commit notifications must be a boolean value.");
+  }
+
+  if (typeof settings.notifyOnMerge !== "boolean") {
+    errors.push("Merge notifications must be a boolean value.");
+  }
+
+  if (typeof settings.notifyOnPush !== "boolean") {
+    errors.push("Push notifications must be a boolean value.");
+  }
+
   errors.push(...validateCommitMessageTemplate(settings.commitMessageTemplate));
 
   if (settings.githubUsername && !GITHUB_USERNAME_PATTERN.test(settings.githubUsername)) {

@@ -36,6 +36,7 @@ class FakeRunner {
 
 describe("git sync service", () => {
   it("commits local changes before fetch, merge, and push", async () => {
+    const events: string[] = [];
     const runner = new FakeRunner((args) => {
       if (args[0] === "status") {
         return { stdout: " M note.md\n" };
@@ -55,6 +56,9 @@ describe("git sync service", () => {
         remoteUrl: "https://github.com/octocat/repo.git",
         branch: "main",
       }),
+      onEvent: (event) => {
+        events.push(`${event.type}:${event.message}`);
+      },
       now: () => new Date(2026, 2, 31, 12, 34, 56),
     });
 
@@ -62,6 +66,9 @@ describe("git sync service", () => {
 
     expect(result.commitCreated).toBe(true);
     expect(result.mergeResolved).toBe(false);
+    expect(result.pushed).toBe(true);
+    expect(events.some((event) => event.startsWith("commit:"))).toBe(true);
+    expect(events.some((event) => event.startsWith("push:"))).toBe(true);
     expect(runner.history.map((entry) => entry.args[0])).toEqual([
       "status",
       "add",
@@ -77,6 +84,7 @@ describe("git sync service", () => {
     const resolver = {
       resolveFile: vi.fn(() => Promise.resolve()),
     };
+    const events: string[] = [];
     const runner = new FakeRunner((args) => {
       if (args[0] === "status") {
         return { stdout: "" };
@@ -100,11 +108,15 @@ describe("git sync service", () => {
         remoteUrl: "https://github.com/octocat/repo.git",
         branch: "main",
       }),
+      onEvent: (event) => {
+        events.push(event.type);
+      },
     });
 
     const result = await service.sync();
 
     expect(result.mergeResolved).toBe(true);
+    expect(events).toContain("merge");
     expect(resolver.resolveFile).toHaveBeenCalledWith("note.md", expect.any(Date));
     expect(runner.history.map((entry) => entry.args.join(" "))).toContain("commit --no-edit");
   });

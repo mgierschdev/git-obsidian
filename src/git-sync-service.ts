@@ -10,6 +10,7 @@ import type {
   GitCommandRunnerLike,
   GitObsidianSettings,
   PluginLogger,
+  SyncEventReporter,
   SyncResult,
 } from "./types";
 
@@ -18,16 +19,19 @@ interface GitSyncServiceDependencies {
   conflictResolver: ConflictResolverLike;
   getSettings: () => GitObsidianSettings;
   logger?: PluginLogger;
+  onEvent?: SyncEventReporter;
   now?: () => Date;
 }
 
 export class GitSyncService {
   private readonly now: () => Date;
   private readonly logger: PluginLogger;
+  private readonly onEvent: SyncEventReporter;
 
   constructor(private readonly deps: GitSyncServiceDependencies) {
     this.now = deps.now ?? (() => new Date());
     this.logger = deps.logger ?? (() => undefined);
+    this.onEvent = deps.onEvent ?? (() => undefined);
   }
 
   async sync(): Promise<SyncResult> {
@@ -64,7 +68,9 @@ export class GitSyncService {
       );
       await this.deps.runner.run(["commit", "-m", commitMessage]);
       commitCreated = true;
-      this.logger(`Created sync commit "${commitMessage}".`);
+      const message = `Created sync commit "${commitMessage}".`;
+      this.logger(message);
+      this.onEvent({ type: "commit", message });
     }
 
     const mergeResolved = await this.fetchAndMerge(settings);
@@ -82,6 +88,7 @@ export class GitSyncService {
       message: summaryParts.join(" "),
       commitCreated,
       mergeResolved,
+      pushed: true,
     };
   }
 
@@ -137,7 +144,9 @@ export class GitSyncService {
       }
 
       await this.deps.runner.run(["commit", "--no-edit"]);
-      this.logger(`Resolved merge conflicts in ${conflictedFiles.join(", ")}.`);
+      const message = `Resolved merge conflicts in ${conflictedFiles.join(", ")}.`;
+      this.logger(message);
+      this.onEvent({ type: "merge", message });
       return true;
     }
   }
@@ -153,6 +162,9 @@ export class GitSyncService {
           },
         },
       );
+      const message = `Pushed the current vault state to ${settings.branch}.`;
+      this.logger(message);
+      this.onEvent({ type: "push", message });
     } catch (error) {
       throw mapNetworkGitError(error, "Git push failed. Check repository permissions, branch protection, token scopes, and network connectivity.");
     }

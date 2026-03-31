@@ -32,6 +32,11 @@ export class GitObsidianSettingTab extends PluginSettingTab {
     this.addIntervalSetting(containerEl);
     this.addToggleSetting(containerEl, "Auto-commit", "Create a commit automatically whenever local changes are detected before sync.", "autoCommit");
     this.addToggleSetting(containerEl, "Auto-merge", "Merge remote changes automatically. When a note conflict remains, preserve both versions inside the note.", "autoMerge");
+    this.addNotificationHeading(containerEl);
+    this.addToggleSetting(containerEl, "Notify on errors", "Show a notice when sync fails or configuration blocks Git operations.", "notifyOnError");
+    this.addToggleSetting(containerEl, "Notify on commits", "Show a notice when the plugin creates an automatic sync commit.", "notifyOnCommit");
+    this.addToggleSetting(containerEl, "Notify on merges", "Show a notice when the plugin resolves and completes a merge.", "notifyOnMerge");
+    this.addToggleSetting(containerEl, "Notify on pushes", "Show a notice when the plugin pushes changes to the remote branch.", "notifyOnPush");
     this.addTextSetting(
       containerEl,
       "Commit message template",
@@ -69,6 +74,10 @@ export class GitObsidianSettingTab extends PluginSettingTab {
     );
   }
 
+  private addNotificationHeading(containerEl: HTMLElement): void {
+    new Setting(containerEl).setName("Notifications").setHeading();
+  }
+
   private addIntervalSetting(containerEl: HTMLElement): void {
     new Setting(containerEl)
       .setName("Sync interval (minutes)")
@@ -92,7 +101,7 @@ export class GitObsidianSettingTab extends PluginSettingTab {
       });
   }
 
-  private addToggleSetting<K extends keyof Pick<GitObsidianSettings, "autoCommit" | "autoMerge">>(
+  private addToggleSetting<K extends keyof Pick<GitObsidianSettings, "autoCommit" | "autoMerge" | "notifyOnError" | "notifyOnCommit" | "notifyOnMerge" | "notifyOnPush">>(
     containerEl: HTMLElement,
     name: string,
     description: string,

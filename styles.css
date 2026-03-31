@@ -17,3 +17,70 @@
 .git-obsidian-status[data-sync-status="paused"] {
   color: var(--text-muted);
 }
+
+.git-obsidian-history-view {
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.git-obsidian-history-header {
+  margin-bottom: 0.75rem;
+}
+
+.git-obsidian-history-header h3 {
+  margin: 0;
+}
+
+.git-obsidian-history-summary {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.git-obsidian-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.git-obsidian-history-item {
+  padding: 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+}
+
+.git-obsidian-history-top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.git-obsidian-history-hash {
+  font-size: 0.85rem;
+}
+
+.git-obsidian-history-date,
+.git-obsidian-history-author {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.git-obsidian-history-subject {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.git-obsidian-history-body {
+  white-space: pre-wrap;
+  font-family: var(--font-text);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+}
+
+.git-obsidian-history-empty {
+  padding: 1rem 0.5rem;
+  color: var(--text-muted);
+}

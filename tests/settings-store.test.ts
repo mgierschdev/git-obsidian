@@ -34,11 +34,13 @@ describe("settings validation", () => {
     const errors = validateSettingsForPersistence({
       ...DEFAULT_SETTINGS,
       syncIntervalMinutes: 0,
+      notifyOnPush: "yes" as unknown as boolean,
       commitMessageTemplate: "{{bad}}",
       remoteUrl: "git@github.com:octocat/repo.git",
     });
 
     expect(errors).toContain("Sync interval must be an integer greater than or equal to 1 minute.");
+    expect(errors).toContain("Push notifications must be a boolean value.");
     expect(errors).toContain('Unsupported commit message placeholder "{{bad}}". Supported placeholders are {{datetime}}, {{gitUser}}.');
     expect(errors).toContain("Remote URL must be a GitHub HTTPS repository URL, for example https://github.com/owner/repo.git.");
   });

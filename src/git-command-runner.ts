@@ -4,9 +4,11 @@ import { promisify } from "node:util";
 
 import type {
   GitCommandResult,
+  GitHistoryEntry,
   GitRunOptions,
   RepositoryInspection,
 } from "./types";
+import { buildGitHistoryArgs, parseGitHistory } from "./git-history";
 
 const execFileAsync = promisify(execFile);
 
@@ -109,6 +111,11 @@ export class GitCommandRunner {
 
       throw new GitCommandError(fullArgs, stdout, stderr, exitCode, detail);
     }
+  }
+
+  async readHistory(limit = 30): Promise<GitHistoryEntry[]> {
+    const output = await this.run(buildGitHistoryArgs(limit));
+    return parseGitHistory(output.stdout);
   }
 
   private async tryReadSingleLine(args: string[]): Promise<string | null> {

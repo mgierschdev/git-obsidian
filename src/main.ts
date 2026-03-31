@@ -1,13 +1,14 @@
-import { Notice, Plugin } from "obsidian";
+import { Notice, Plugin, WorkspaceLeaf } from "obsidian";
 
 import { ConflictResolver } from "./conflict-resolver";
 import { GitCommandRunner } from "./git-command-runner";
+import { GitHistoryView, GIT_HISTORY_VIEW_TYPE } from "./history-view";
 import { GitSyncService } from "./git-sync-service";
 import { normalizeSettings, SettingsStore, SettingsValidationError } from "./settings-store";
 import { GitObsidianSettingTab } from "./settings-tab";
 import { SyncScheduler } from "./sync-scheduler";
 import { getVaultBasePath } from "./vault-path";
-import { DEFAULT_SETTINGS, type GitObsidianSettings, type SyncStatus } from "./types";
+import { DEFAULT_SETTINGS, type GitHistoryEntry, type GitObsidianSettings, type SyncEvent, type SyncStatus } from "./types";
 
 export default class GitObsidianPlugin extends Plugin {
   settings: GitObsidianSettings = DEFAULT_SETTINGS;
@@ -34,6 +35,11 @@ export default class GitObsidianPlugin extends Plugin {
     this.statusBarItemEl.addClass("git-obsidian-status");
     this.setStatus("idle", "Ready");
 
+    this.registerView(
+      GIT_HISTORY_VIEW_TYPE,
+      (leaf) => new GitHistoryView(leaf, this),
+    );
+
     if (this.vaultBasePath) {
       this.gitRunner = new GitCommandRunner(this.vaultBasePath);
       this.syncService = new GitSyncService({
@@ -41,6 +47,7 @@ export default class GitObsidianPlugin extends Plugin {
         conflictResolver: new ConflictResolver(this.vaultBasePath),
         getSettings: () => this.settings,
         logger: (message, level = "info") => this.log(message, level),
+        onEvent: (event) => this.handleSyncEvent(event),
       });
       try {
         await this.detectRepositoryDefaults(false);
@@ -74,13 +81,21 @@ export default class GitObsidianPlugin extends Plugin {
         if (this.scheduler.isPaused()) {
           this.scheduler.resume();
           this.setStatus("idle", "Automatic sync resumed");
-          new Notice("Git Obsidian automatic sync resumed.");
+          this.notify("Git Obsidian automatic sync resumed.");
           return;
         }
 
         this.scheduler.pause();
         this.setStatus("paused", "Automatic sync paused");
-        new Notice("Git Obsidian automatic sync paused.");
+        this.notify("Git Obsidian automatic sync paused.");
+      },
+    });
+
+    this.addCommand({
+      id: "open-git-history",
+      name: "Open Git history",
+      callback: () => {
+        void this.activateHistoryView();
       },
     });
 
@@ -106,6 +121,15 @@ export default class GitObsidianPlugin extends Plugin {
 
   getRepositorySummary(): string {
     return this.repositorySummary;
+  }
+
+  async getGitHistory(limit = 30): Promise<GitHistoryEntry[]> {
+    if (!this.gitRunner) {
+      throw new Error("Git history is unavailable because the vault path could not be resolved.");
+    }
+
+    await this.gitRunner.inspectRepository();
+    return this.gitRunner.readHistory(limit);
   }
 
   async detectRepositoryDefaults(force: boolean): Promise<void> {
@@ -150,7 +174,7 @@ export default class GitObsidianPlugin extends Plugin {
   async triggerManualSync(): Promise<void> {
     const started = await this.scheduler.triggerManual();
     if (!started) {
-      new Notice("Git sync is already running.");
+      this.notify("Git sync is already running.");
     }
   }
 
@@ -164,8 +188,8 @@ export default class GitObsidianPlugin extends Plugin {
     this.log(message, "error");
     this.setStatus("error", message);
 
-    if (showNotice) {
-      new Notice(message, 8000);
+    if (showNotice && this.settings.notifyOnError) {
+      this.notify(message, 8000);
     }
   }
 
@@ -181,9 +205,10 @@ export default class GitObsidianPlugin extends Plugin {
       const result = await this.syncService.sync();
       this.setStatus("success", result.message);
       this.log(result.message);
+      void this.refreshHistoryView();
 
       if (source === "manual") {
-        new Notice(result.message, 5000);
+        this.notify(result.message, 5000);
       }
     } catch (error) {
       this.handleUserFacingError(error, source === "manual");
@@ -210,5 +235,61 @@ export default class GitObsidianPlugin extends Plugin {
     this.statusBarItemEl.setText(`Git Sync: ${status}`);
     this.statusBarItemEl.setAttribute("aria-label", detail);
     this.statusBarItemEl.title = detail;
+  }
+
+  private handleSyncEvent(event: SyncEvent): void {
+    if (!this.shouldNotifyForEvent(event.type)) {
+      return;
+    }
+
+    this.notify(event.message, 5000);
+  }
+
+  private shouldNotifyForEvent(eventType: SyncEvent["type"]): boolean {
+    switch (eventType) {
+      case "commit":
+        return this.settings.notifyOnCommit;
+      case "merge":
+        return this.settings.notifyOnMerge;
+      case "push":
+        return this.settings.notifyOnPush;
+    }
+  }
+
+  private notify(message: string, timeout = 4000): void {
+    new Notice(message, timeout);
+  }
+
+  private async activateHistoryView(): Promise<void> {
+    const leaf = await this.app.workspace.ensureSideLeaf(
+      GIT_HISTORY_VIEW_TYPE,
+      "right",
+      {
+        active: true,
+        reveal: true,
+      },
+    );
+
+    await leaf.setViewState({
+      type: GIT_HISTORY_VIEW_TYPE,
+      active: true,
+    });
+    await leaf.loadIfDeferred();
+    await this.app.workspace.revealLeaf(leaf);
+
+    const view = leaf.view;
+    if (view instanceof GitHistoryView) {
+      await view.reloadHistory(false);
+    }
+  }
+
+  private async refreshHistoryView(): Promise<void> {
+    const leaves = this.app.workspace.getLeavesOfType(GIT_HISTORY_VIEW_TYPE);
+    await Promise.all(leaves.map(async (leaf: WorkspaceLeaf) => {
+      await leaf.loadIfDeferred();
+      if (leaf.view instanceof GitHistoryView) {
+        await leaf.view.reloadHistory(false);
+      }
+    }));
   }
 }
