@@ -41,7 +41,7 @@ describe("settings validation", () => {
 
     expect(errors).toContain("Sync interval must be an integer greater than or equal to 1 minute.");
     expect(errors).toContain("Push notifications must be a boolean value.");
-    expect(errors).toContain('Unsupported commit message placeholder "{{bad}}". Supported placeholders are {{datetime}}, {{gitUser}}.');
+    expect(errors).toContain('Unsupported commit message placeholder "{{bad}}". Supported placeholders are {{datetime}}, {{gitUser}}, {{userName}}, {{fileName}}, {{filename}}.');
     expect(errors).toContain("Remote URL must be a GitHub HTTPS repository URL, for example https://github.com/owner/repo.git.");
   });
 

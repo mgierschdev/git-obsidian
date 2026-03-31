@@ -1,4 +1,12 @@
-const PLACEHOLDERS = ["{{datetime}}", "{{gitUser}}"] as const;
+export interface CommitMessageContext {
+  datetime: string;
+  gitUser: string;
+  userName: string;
+  fileName: string;
+}
+
+const PLACEHOLDERS = ["{{datetime}}", "{{gitUser}}", "{{userName}}", "{{fileName}}"] as const;
+const PLACEHOLDER_ALIASES = ["{{filename}}"] as const;
 
 export class CommitMessageTemplateError extends Error {
   readonly details: string[];
@@ -20,9 +28,12 @@ export function validateCommitMessageTemplate(template: string): string[] {
 
   const unknownPlaceholders = trimmed.match(/{{[^}]+}}/g) ?? [];
   for (const placeholder of unknownPlaceholders) {
-    if (!PLACEHOLDERS.includes(placeholder as (typeof PLACEHOLDERS)[number])) {
+    if (
+      !PLACEHOLDERS.includes(placeholder as (typeof PLACEHOLDERS)[number]) &&
+      !PLACEHOLDER_ALIASES.includes(placeholder as (typeof PLACEHOLDER_ALIASES)[number])
+    ) {
       errors.push(
-        `Unsupported commit message placeholder "${placeholder}". Supported placeholders are ${PLACEHOLDERS.join(", ")}.`,
+        `Unsupported commit message placeholder "${placeholder}". Supported placeholders are ${[...PLACEHOLDERS, ...PLACEHOLDER_ALIASES].join(", ")}.`,
       );
     }
   }
@@ -49,7 +60,7 @@ export function formatLocalDateTime(date: Date): string {
 
 export function renderCommitMessage(
   template: string,
-  gitUser: string,
+  context: CommitMessageContext,
   date = new Date(),
 ): string {
   const errors = validateCommitMessageTemplate(template);
@@ -58,6 +69,9 @@ export function renderCommitMessage(
   }
 
   return template
-    .replace(/{{datetime}}/g, formatLocalDateTime(date))
-    .replace(/{{gitUser}}/g, gitUser);
+    .replace(/{{datetime}}/g, context.datetime || formatLocalDateTime(date))
+    .replace(/{{gitUser}}/g, context.gitUser)
+    .replace(/{{userName}}/g, context.userName)
+    .replace(/{{filename}}/g, context.fileName)
+    .replace(/{{fileName}}/g, context.fileName);
 }

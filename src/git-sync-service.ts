@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { renderCommitMessage } from "./template";
 import {
   SettingsValidationError,
@@ -60,10 +62,18 @@ export class GitSyncService {
     }
 
     if (dirty) {
+      const changedFiles = collectChangedFiles(
+        (await this.deps.runner.run(["status", "--porcelain"])).stdout,
+      );
       await this.deps.runner.run(["add", "-A"]);
       const commitMessage = renderCommitMessage(
         settings.commitMessageTemplate,
-        settings.githubUsername,
+        {
+          datetime: this.now().toISOString(),
+          gitUser: settings.githubUsername,
+          userName: settings.githubUsername,
+          fileName: deriveCommitFileName(changedFiles),
+        },
         this.now(),
       );
       await this.deps.runner.run(["commit", "-m", commitMessage]);
@@ -90,6 +100,27 @@ export class GitSyncService {
       mergeResolved,
       pushed: true,
     };
+  }
+
+  async pushOnly(): Promise<void> {
+    const settings = this.deps.getSettings();
+    const validationErrors = validateSettingsForSync(settings);
+    if (validationErrors.length > 0) {
+      throw new SettingsValidationError(validationErrors);
+    }
+
+    const repository = await this.deps.runner.inspectRepository();
+    if (!repository.currentBranch) {
+      throw new Error("The vault repository is in a detached HEAD state. Check out the configured branch and retry.");
+    }
+
+    if (repository.currentBranch !== settings.branch) {
+      throw new Error(
+        `The current Git branch is "${repository.currentBranch}", but the plugin is configured for "${settings.branch}".`,
+      );
+    }
+
+    await this.push(settings);
   }
 
   private async fetchAndMerge(settings: GitObsidianSettings): Promise<boolean> {
@@ -185,6 +216,40 @@ export class GitSyncService {
       this.logger("Git merge abort failed after a conflict resolution error.", "error");
     }
   }
+}
+
+function collectChangedFiles(statusOutput: string): string[] {
+  return statusOutput
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .map((line) => {
+      if (line.length < 4) {
+        return "";
+      }
+
+      const filePortion = line.slice(3);
+      const renamedParts = filePortion.split(" -> ");
+      return renamedParts[renamedParts.length - 1] ?? "";
+    })
+    .filter(Boolean);
+}
+
+function deriveCommitFileName(changedFiles: string[]): string {
+  if (changedFiles.length === 0) {
+    return "vault";
+  }
+
+  if (changedFiles.length === 1) {
+    return stripExtension(path.basename(changedFiles[0] ?? "vault"));
+  }
+
+  return `${stripExtension(path.basename(changedFiles[0] ?? "vault"))}-and-${changedFiles.length - 1}-more`;
+}
+
+function stripExtension(fileName: string): string {
+  const extension = path.extname(fileName);
+  return extension ? fileName.slice(0, -extension.length) : fileName;
 }
 
 function mapNetworkGitError(error: unknown, fallbackMessage: string): Error {

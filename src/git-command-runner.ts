@@ -3,12 +3,14 @@ import { realpathSync } from "node:fs";
 import { promisify } from "node:util";
 
 import type {
+  GitCommitDetail,
+  GitCommitFileDiff,
   GitCommandResult,
   GitHistoryEntry,
   GitRunOptions,
   RepositoryInspection,
 } from "./types";
-import { buildGitHistoryArgs, parseGitHistory } from "./git-history";
+import { buildGitHistoryArgs, parseCommitFileChanges, parseGitHistory } from "./git-history";
 
 const execFileAsync = promisify(execFile);
 
@@ -118,6 +120,37 @@ export class GitCommandRunner {
     return parseGitHistory(output.stdout);
   }
 
+  async readCommitDetail(hash: string): Promise<GitCommitDetail> {
+    const fileOutput = await this.run([
+      "show",
+      "--format=",
+      "--name-status",
+      hash,
+    ]);
+
+    return {
+      hash,
+      files: parseCommitFileChanges(fileOutput.stdout),
+    };
+  }
+
+  async readCommitFileDiff(hash: string, filePath: string): Promise<GitCommitFileDiff> {
+    const output = await this.run([
+      "show",
+      "--format=",
+      "--patch",
+      hash,
+      "--",
+      filePath,
+    ]);
+
+    return {
+      hash,
+      path: filePath,
+      text: output.stdout.trim(),
+    };
+  }
+
   private async tryReadSingleLine(args: string[]): Promise<string | null> {
     try {
       const output = (await this.run(args)).stdout.trim();
@@ -126,7 +159,6 @@ export class GitCommandRunner {
       return null;
     }
   }
-
   private rethrowAsUserError(error: unknown, message: string): Error {
     if (error instanceof GitCommandError) {
       return new GitCommandError(error.args, error.stdout, error.stderr, error.exitCode, message);
@@ -137,8 +169,16 @@ export class GitCommandRunner {
 }
 
 function buildGitArgs(args: string[], options?: GitRunOptions): string[] {
+  const baseArgs = [
+    "-c",
+    "core.quotePath=false",
+  ];
+
   if (!options?.auth) {
-    return args;
+    return [
+      ...baseArgs,
+      ...args,
+    ];
   }
 
   const authHeader = Buffer.from(
@@ -147,6 +187,7 @@ function buildGitArgs(args: string[], options?: GitRunOptions): string[] {
   ).toString("base64");
 
   return [
+    ...baseArgs,
     "-c",
     "credential.helper=",
     "-c",

@@ -40,7 +40,7 @@ export class GitObsidianSettingTab extends PluginSettingTab {
     this.addTextSetting(
       containerEl,
       "Commit message template",
-      "Use {{datetime}} and {{gitUser}}. Invalid placeholders are rejected.",
+      "Use {{fileName}} or {{filename}}, plus {{datetime}}, {{userName}}, or {{gitUser}}. Invalid placeholders are rejected.",
       "commitMessageTemplate",
       { placeholder: "{{datetime}}-{{gitUser}}" },
     );

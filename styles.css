@@ -23,6 +23,11 @@
   overflow-y: auto;
 }
 
+.git-obsidian-diff-view {
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
 .git-obsidian-history-header {
   margin-bottom: 0.75rem;
 }
@@ -49,6 +54,14 @@
   background: var(--background-secondary);
 }
 
+.git-obsidian-history-item-clickable {
+  cursor: pointer;
+}
+
+.git-obsidian-history-item-clickable:hover {
+  border-color: var(--interactive-accent);
+}
+
 .git-obsidian-history-top-row {
   display: flex;
   justify-content: space-between;
@@ -72,6 +85,10 @@
   margin-bottom: 0.25rem;
 }
 
+.git-obsidian-history-actions {
+  margin-top: 0.5rem;
+}
+
 .git-obsidian-history-body {
   white-space: pre-wrap;
   font-family: var(--font-text);
@@ -83,4 +100,23 @@
 .git-obsidian-history-empty {
   padding: 1rem 0.5rem;
   color: var(--text-muted);
+}
+
+.git-obsidian-commit-detail {
+  margin-top: 1rem;
+}
+
+.git-obsidian-commit-files h4 {
+  margin: 0 0 0.5rem;
+}
+
+.git-obsidian-commit-detail-body {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  font-size: 0.82rem;
 }

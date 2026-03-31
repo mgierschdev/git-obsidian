@@ -71,13 +71,75 @@ describe("git sync service", () => {
     expect(events.some((event) => event.startsWith("push:"))).toBe(true);
     expect(runner.history.map((entry) => entry.args[0])).toEqual([
       "status",
+      "status",
       "add",
       "commit",
       "fetch",
       "merge",
       "push",
     ]);
-    expect(runner.history[2]?.args[2]).toMatch(/^2026-03-31T12:34:56[+-]\d{2}:\d{2}-octocat$/);
+    const commitEntry = runner.history.find((entry) => entry.args[0] === "commit" && entry.args[1] === "-m");
+    expect(commitEntry?.args[2]).toBe("2026-03-31T10:34:56.000Z-octocat");
+  });
+
+  it("supports the user-requested fileName/date/userName commit template", async () => {
+    const runner = new FakeRunner((args) => {
+      if (args[0] === "status") {
+        return { stdout: " M Life Admin.md\n" };
+      }
+      return {};
+    });
+
+    const service = new GitSyncService({
+      runner,
+      conflictResolver: {
+        resolveFile: vi.fn(() => Promise.resolve()),
+      },
+      getSettings: () => ({
+        ...DEFAULT_SETTINGS,
+        commitMessageTemplate: "{{fileName}}-{{datetime}}-{{userName}}",
+        githubUsername: "mgierschdev",
+        githubToken: "token",
+        remoteUrl: "https://github.com/octocat/repo.git",
+        branch: "main",
+      }),
+      now: () => new Date("2026-03-31T19:10:00.000Z"),
+    });
+
+    await service.sync();
+
+    const commitEntry = runner.history.find((entry) => entry.args[0] === "commit" && entry.args[1] === "-m");
+    expect(commitEntry?.args[2]).toBe("Life Admin-2026-03-31T19:10:00.000Z-mgierschdev");
+  });
+
+  it("supports the lowercase filename placeholder alias", async () => {
+    const runner = new FakeRunner((args) => {
+      if (args[0] === "status") {
+        return { stdout: " M Life Admin.md\n" };
+      }
+      return {};
+    });
+
+    const service = new GitSyncService({
+      runner,
+      conflictResolver: {
+        resolveFile: vi.fn(() => Promise.resolve()),
+      },
+      getSettings: () => ({
+        ...DEFAULT_SETTINGS,
+        commitMessageTemplate: "{{filename}}-{{datetime}}-{{userName}}",
+        githubUsername: "mgierschdev",
+        githubToken: "token",
+        remoteUrl: "https://github.com/octocat/repo.git",
+        branch: "main",
+      }),
+      now: () => new Date("2026-03-31T19:10:00.000Z"),
+    });
+
+    await service.sync();
+
+    const commitEntry = runner.history.find((entry) => entry.args[0] === "commit" && entry.args[1] === "-m");
+    expect(commitEntry?.args[2]).toBe("Life Admin-2026-03-31T19:10:00.000Z-mgierschdev");
   });
 
   it("resolves Markdown conflicts and completes the merge commit", async () => {

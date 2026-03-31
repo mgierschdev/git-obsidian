@@ -67,6 +67,22 @@ export interface GitHistoryEntry {
   body: string;
 }
 
+export interface GitCommitFileChange {
+  path: string;
+  status: string;
+}
+
+export interface GitCommitDetail {
+  hash: string;
+  files: GitCommitFileChange[];
+}
+
+export interface GitCommitFileDiff {
+  hash: string;
+  path: string;
+  text: string;
+}
+
 export interface ConflictResolverLike {
   resolveFile(relativeFilePath: string, timestamp: Date): Promise<void>;
 }

@@ -1,6 +1,7 @@
 import { Notice, Plugin, WorkspaceLeaf } from "obsidian";
 
 import { ConflictResolver } from "./conflict-resolver";
+import { GitDiffView, GIT_DIFF_VIEW_TYPE } from "./diff-view";
 import { GitCommandRunner } from "./git-command-runner";
 import { GitHistoryView, GIT_HISTORY_VIEW_TYPE } from "./history-view";
 import { GitSyncService } from "./git-sync-service";
@@ -8,7 +9,15 @@ import { normalizeSettings, SettingsStore, SettingsValidationError } from "./set
 import { GitObsidianSettingTab } from "./settings-tab";
 import { SyncScheduler } from "./sync-scheduler";
 import { getVaultBasePath } from "./vault-path";
-import { DEFAULT_SETTINGS, type GitHistoryEntry, type GitObsidianSettings, type SyncEvent, type SyncStatus } from "./types";
+import {
+  DEFAULT_SETTINGS,
+  type GitCommitDetail,
+  type GitCommitFileDiff,
+  type GitHistoryEntry,
+  type GitObsidianSettings,
+  type SyncEvent,
+  type SyncStatus,
+} from "./types";
 
 export default class GitObsidianPlugin extends Plugin {
   settings: GitObsidianSettings = DEFAULT_SETTINGS;
@@ -38,6 +47,10 @@ export default class GitObsidianPlugin extends Plugin {
     this.registerView(
       GIT_HISTORY_VIEW_TYPE,
       (leaf) => new GitHistoryView(leaf, this),
+    );
+    this.registerView(
+      GIT_DIFF_VIEW_TYPE,
+      (leaf) => new GitDiffView(leaf),
     );
 
     if (this.vaultBasePath) {
@@ -99,6 +112,14 @@ export default class GitObsidianPlugin extends Plugin {
       },
     });
 
+    this.addRibbonIcon(
+      "git-commit-horizontal",
+      "Open Git history",
+      () => {
+        void this.activateHistoryView();
+      },
+    );
+
     this.addSettingTab(new GitObsidianSettingTab(this.app, this));
   }
 
@@ -130,6 +151,15 @@ export default class GitObsidianPlugin extends Plugin {
 
     await this.gitRunner.inspectRepository();
     return this.gitRunner.readHistory(limit);
+  }
+
+  async getCommitDetail(hash: string): Promise<GitCommitDetail> {
+    if (!this.gitRunner) {
+      throw new Error("Git commit detail is unavailable because the vault path could not be resolved.");
+    }
+
+    await this.gitRunner.inspectRepository();
+    return this.gitRunner.readCommitDetail(hash);
   }
 
   async detectRepositoryDefaults(force: boolean): Promise<void> {
@@ -178,6 +208,33 @@ export default class GitObsidianPlugin extends Plugin {
     }
   }
 
+  async pushPendingChanges(): Promise<void> {
+    if (!this.syncService) {
+      this.handleUserFacingError(new Error("Git sync is unavailable because the vault path could not be resolved."), true);
+      return;
+    }
+
+    this.setStatus("syncing", "Pushing pending changes");
+
+    try {
+      await this.syncService.pushOnly();
+      this.setStatus("success", "Pending commits pushed.");
+      void this.refreshHistoryView();
+    } catch (error) {
+      this.handleUserFacingError(error, true);
+    }
+  }
+
+  async openCommitFileDiff(hash: string, filePath: string): Promise<void> {
+    if (!this.gitRunner) {
+      throw new Error("Git commit diff is unavailable because the vault path could not be resolved.");
+    }
+
+    await this.gitRunner.inspectRepository();
+    const diff = await this.gitRunner.readCommitFileDiff(hash, filePath);
+    await this.openDiffView(diff);
+  }
+
   handleUserFacingError(error: unknown, showNotice: boolean): void {
     const message = error instanceof SettingsValidationError
       ? error.details.join(" ")
@@ -187,6 +244,7 @@ export default class GitObsidianPlugin extends Plugin {
 
     this.log(message, "error");
     this.setStatus("error", message);
+    void this.refreshHistoryView();
 
     if (showNotice && this.settings.notifyOnError) {
       this.notify(message, 8000);
@@ -238,7 +296,9 @@ export default class GitObsidianPlugin extends Plugin {
   }
 
   private handleSyncEvent(event: SyncEvent): void {
-    if (!this.shouldNotifyForEvent(event.type)) {
+    void this.refreshHistoryView();
+
+    if (event.type === "push" || !this.shouldNotifyForEvent(event.type)) {
       return;
     }
 
@@ -281,6 +341,23 @@ export default class GitObsidianPlugin extends Plugin {
     if (view instanceof GitHistoryView) {
       await view.reloadHistory(false);
     }
+  }
+
+  private async openDiffView(diff: GitCommitFileDiff): Promise<void> {
+    const leaf = this.app.workspace.getLeaf(true);
+    await leaf.setViewState({
+      type: GIT_DIFF_VIEW_TYPE,
+      active: true,
+    });
+    await leaf.loadIfDeferred();
+
+    const view = leaf.view;
+    if (!(view instanceof GitDiffView)) {
+      throw new Error("Failed to open the Git diff view.");
+    }
+
+    view.setDiff(diff);
+    this.app.workspace.setActiveLeaf(leaf, { focus: true });
   }
 
   private async refreshHistoryView(): Promise<void> {
