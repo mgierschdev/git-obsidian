@@ -1,0 +1,19 @@
+.git-obsidian-status {
+  font-variant-numeric: tabular-nums;
+}
+
+.git-obsidian-status[data-sync-status="success"] {
+  color: var(--text-success);
+}
+
+.git-obsidian-status[data-sync-status="error"] {
+  color: var(--text-error);
+}
+
+.git-obsidian-status[data-sync-status="syncing"] {
+  color: var(--interactive-accent);
+}
+
+.git-obsidian-status[data-sync-status="paused"] {
+  color: var(--text-muted);
+}

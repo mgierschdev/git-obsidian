@@ -1,0 +1,20 @@
+# vscode
+.vscode
+
+# intellij
+*.iml
+.idea
+
+# npm
+node_modules
+
+# build artifacts
+main.js
+*.map
+coverage
+
+# obsidian
+data.json
+
+# macOS
+.DS_Store
