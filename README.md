@@ -1,6 +1,6 @@
-# Git Obsidian
+# Vault Git Sync
 
-Git Obsidian is a desktop-only Obsidian plugin for syncing an existing vault repository with GitHub over HTTPS. It watches saved vault activity, creates a commit when needed, fetches and merges remote changes, pushes the configured branch, and lets you inspect Git history and file diffs without leaving Obsidian.
+Vault Git Sync is a desktop-only Obsidian plugin for syncing an existing vault repository with GitHub over HTTPS. It watches saved vault activity, creates a commit when needed, fetches and merges remote changes, pushes the configured branch, and lets you inspect Git history and file diffs without leaving Obsidian.
 
 ## Highlights
 
@@ -45,18 +45,18 @@ This produces the plugin bundle in `main.js` and uses the checked-in `manifest.j
 Create the plugin folder inside your vault:
 
 ```bash
-mkdir -p "<VaultPath>/.obsidian/plugins/git-obsidian"
+mkdir -p "<VaultPath>/.obsidian/plugins/vault-git-sync"
 ```
 
 Copy the built plugin files into it:
 
 ```bash
-cp manifest.json "<VaultPath>/.obsidian/plugins/git-obsidian/"
-cp main.js "<VaultPath>/.obsidian/plugins/git-obsidian/"
-cp styles.css "<VaultPath>/.obsidian/plugins/git-obsidian/"
+cp manifest.json "<VaultPath>/.obsidian/plugins/vault-git-sync/"
+cp main.js "<VaultPath>/.obsidian/plugins/vault-git-sync/"
+cp styles.css "<VaultPath>/.obsidian/plugins/vault-git-sync/"
 ```
 
-Then open `Settings -> Community plugins`, reload plugins or restart Obsidian, and enable `Git Obsidian`.
+Then open `Settings -> Community plugins`, reload plugins or restart Obsidian, and enable `Vault Git Sync`.
 
 ## Install In An iCloud Vault On macOS
 
@@ -69,10 +69,10 @@ $HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/<VaultName>
 Example:
 
 ```bash
-mkdir -p "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/git-obsidian"
-cp manifest.json "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/git-obsidian/"
-cp main.js "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/git-obsidian/"
-cp styles.css "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/git-obsidian/"
+mkdir -p "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/vault-git-sync"
+cp manifest.json "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/vault-git-sync/"
+cp main.js "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/vault-git-sync/"
+cp styles.css "$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/.obsidian/plugins/vault-git-sync/"
 ```
 
 Reload community plugins or restart Obsidian after copying the files.
@@ -82,7 +82,7 @@ Reload community plugins or restart Obsidian after copying the files.
 For local development, symlink the repo into the vault plugin directory so rebuilt files are picked up without manual copying:
 
 ```bash
-ln -s "/absolute/path/to/git-obsidian" "<VaultPath>/.obsidian/plugins/git-obsidian"
+ln -s "/absolute/path/to/git-obsidian" "<VaultPath>/.obsidian/plugins/vault-git-sync"
 ```
 
 Rebuild after source changes:
@@ -141,6 +141,17 @@ Supported commit template placeholders:
 - The plugin operates on saved files on disk. Unsaved editor changes are not visible to Git yet.
 - The GitHub token is stored in Obsidian plugin data so unattended sync can run. Use a least-privilege token.
 - The history view displays commit author names and email addresses reported by Git.
+
+## Disclosures
+
+- Requires a GitHub account, a GitHub personal access token, and a local `git` executable.
+- Makes outbound HTTPS requests to GitHub when fetching and pushing.
+- Reads and writes files inside the current vault repository through local Git operations, including staging, committing, merging, and conflict preservation for supported note files.
+- Does not include telemetry, ads, payments, or closed-source components.
+
+## License
+
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
 
 ## Development
 

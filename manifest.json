@@ -1,6 +1,6 @@
 {
-  "id": "git-obsidian",
-  "name": "Git Obsidian",
+  "id": "vault-git-sync",
+  "name": "Vault Git Sync",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
   "description": "Sync Obsidian notes with a GitHub repository using scheduled Git commits, merges, and pushes.",
