@@ -98,7 +98,7 @@ describe("git sync service", () => {
       getSettings: () => ({
         ...DEFAULT_SETTINGS,
         commitMessageTemplate: "{{fileName}}-{{datetime}}-{{userName}}",
-        githubUsername: "mgierschdev",
+        githubUsername: "octocat",
         githubToken: "token",
         remoteUrl: "https://github.com/octocat/repo.git",
         branch: "main",
@@ -109,7 +109,7 @@ describe("git sync service", () => {
     await service.sync();
 
     const commitEntry = runner.history.find((entry) => entry.args[0] === "commit" && entry.args[1] === "-m");
-    expect(commitEntry?.args[2]).toBe("Life Admin-2026-03-31T19:10:00.000Z-mgierschdev");
+    expect(commitEntry?.args[2]).toBe("Life Admin-2026-03-31T19:10:00.000Z-octocat");
   });
 
   it("supports the lowercase filename placeholder alias", async () => {
@@ -128,7 +128,7 @@ describe("git sync service", () => {
       getSettings: () => ({
         ...DEFAULT_SETTINGS,
         commitMessageTemplate: "{{filename}}-{{datetime}}-{{userName}}",
-        githubUsername: "mgierschdev",
+        githubUsername: "octocat",
         githubToken: "token",
         remoteUrl: "https://github.com/octocat/repo.git",
         branch: "main",
@@ -139,7 +139,7 @@ describe("git sync service", () => {
     await service.sync();
 
     const commitEntry = runner.history.find((entry) => entry.args[0] === "commit" && entry.args[1] === "-m");
-    expect(commitEntry?.args[2]).toBe("Life Admin-2026-03-31T19:10:00.000Z-mgierschdev");
+    expect(commitEntry?.args[2]).toBe("Life Admin-2026-03-31T19:10:00.000Z-octocat");
   });
 
   it("resolves Markdown conflicts and completes the merge commit", async () => {

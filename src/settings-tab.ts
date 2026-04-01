@@ -32,7 +32,7 @@ export class GitObsidianSettingTab extends PluginSettingTab {
       "GitHub username",
       "Used for HTTPS authentication and the {{gitUser}} commit message placeholder.",
       "githubUsername",
-      { placeholder: "mgierschdev" },
+      { placeholder: "octocat" },
     );
     this.addTextSetting(
       containerEl,
