@@ -1,7 +1,7 @@
 {
   "name": "git-obsidian",
   "version": "1.0.0",
-  "description": "Obsidian plugin that syncs vault notes with GitHub over HTTPS.",
+  "description": "Plugin that syncs vault notes with GitHub over HTTPS.",
   "main": "main.js",
   "type": "module",
   "scripts": {

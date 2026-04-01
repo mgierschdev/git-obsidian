@@ -3,7 +3,7 @@
   "name": "Vault Git Sync",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
-  "description": "Sync Obsidian notes with a GitHub repository using scheduled Git commits, merges, and pushes.",
+  "description": "Sync vault notes with a GitHub repository using scheduled Git commits, merges, and pushes.",
   "author": "Maximilian Gierschmann",
   "authorUrl": "https://github.com/mgierschdev",
   "isDesktopOnly": true
